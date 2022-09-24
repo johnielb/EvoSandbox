@@ -1,69 +1,133 @@
+import copy
 import random
 
 import numpy as np
 
+# HYPERPARAMETERS
+# Meta-EP
+mu_meta = 50
+beta = (30-(-30))/10
+gamma = 0
+# epsilon = (30-(-30))/10
+# var_control = 1
+# Diff ev
+mu_de = 50
+
+
+def generate_standard_normal_vector(length):
+    return np.array([random.normalvariate(0, 1) for _ in range(length)])
+
+
+def generate_uniform_vector(length, xmin, xmax):
+    return np.array([random.uniform(xmin, xmax) for _ in range(length)])
+
+
+def min_max_normalise(value, newMin, newMax, oldMin, oldMax):
+    return (value - oldMin) / (oldMax - oldMin) * (newMax - newMin) + newMin
+
 
 class EPIndividual:
-    epsilon = 0.1
-    var_control = 1
-
     def __init__(self, n, evaluator, xmin=-1, xmax=1):
-        self.vector = np.array(random.uniform(xmin, xmax) for _ in range(n))
-        self.variance = np.array(random.uniform(xmin, xmax) for _ in range(n))
+        self.xmin = xmin
+        self.xmax = xmax
+        self.vector = generate_uniform_vector(n, xmin, xmax)
+        # self.variance = generate_uniform_vector(n, xmin, xmax)
+        self.evaluator = evaluator
+        self.fitness = None
+        self.f = None
 
-    def update(self):
-        vector_increment = np.array(random.normalvariate(0, 1) for _ in range(len(self.vector)))
-        vector_increment *= np.sqrt(self.variance)
-        self.vector += vector_increment
+    def __lt__(self, other):
+        if self.fitness is None:
+            self.evaluate()
+        if other.fitness is None:
+            other.evaluate()
 
-        variance_increment = np.array(random.normalvariate(0, 1) for _ in range(len(self.variance)))
-        variance_increment *= np.sqrt(self.variance * self.var_control)
-        self.variance += variance_increment
+        return self.fitness < other.fitness
+
+    def __eq__(self, other):
+        if self.fitness is None:
+            self.evaluate()
+        if other.fitness is None:
+            other.evaluate()
+
+        return self.fitness == other.fitness
+
+    def __repr__(self):
+        return '{:,}'.format(round(self.fitness, 4))
+
+    def mutate(self):
+        if self.fitness is None:
+            self.evaluate()
+
+        offspring = copy.deepcopy(self)
+
+        vector_increment = generate_standard_normal_vector(len(self.vector))  # r_xi
+        vector_increment *= np.sqrt(beta * self.f + gamma)  # times sqrt(v_i)
+        offspring.vector += vector_increment
+
+        # variance_increment = generate_standard_normal_vector(len(self.variance))  # r_vi
+        # variance_increment *= np.sqrt(abs(self.variance * var_control))  # times sqrt(c*v_i)
+        # offspring.variance += variance_increment
+        # offspring.variance = np.maximum(variance_increment, epsilon)
+
+        offspring.evaluate()
+        return offspring
+
+    def evaluate(self):
+        if any(x < self.xmin or x > self.xmax for x in self.vector):
+            return np.inf
+
+        self.fitness = self.evaluator(self) + 1
 
 
 def rosenbrock(individual):
     fitness = 0
-    if any(x < -30 or x > 30 for x in individual.vector):
-        return np.inf,
-
     for d in range(0, len(individual.vector) - 1):
         fitness += 100 * (individual.vector[d] ** 2 - individual.vector[d + 1] ** 2) ** 2 + (
-                    individual.vector[d] - 1) ** 2
-    return fitness,
+                individual.vector[d] - 1) ** 2
+
+    return fitness
 
 
 def griewank(individual):
     summation = 0
     product = 1
-    if any(x < individual.xmin or x > individual.xmax for x in individual):
-        return np.inf,
+    for d in range(0, len(individual.vector)):
+        summation += individual.vector[d] ** 2
+        product *= np.cos(individual.vector[d] / np.sqrt(d + 1))
 
-    for d in range(0, len(individual)):
-        summation += individual[d] ** 2
-        product *= np.cos(individual[d] / np.sqrt(d + 1))
-
-    return summation / 4000 - product + 1,
+    return summation / 4000 - product + 1
 
 
-def metaEP(dimensions, fitness):
-    mu = 20
-    population = [EPIndividual(dimensions, fitness, xmin=-30, xmax=30) for _ in range(mu)]
+def basicEP(dimensions, fitness):
+    population = [EPIndividual(dimensions, fitness, xmin=-30, xmax=30) for _ in range(mu_meta)]
+    for _ in range(50):
+        offspring = []
+        for individual in population:
+            individual.evaluate()
+        for individual in population:
+            individual.f = min_max_normalise(individual.fitness,
+                                             1, 2,
+                                             min(population).fitness, max(population).fitness)
+            child = individual.mutate()
+            offspring.append(child)
+        population = sorted(population + offspring)[0:mu_meta]
+
+    print(population[0].fitness)
 
 
 def differential_evolution(dimensions, fitness):
-    mu = 50
-    population = [EPIndividual(dimensions, fitness, xmin=-30, xmax=30) for _ in range(mu)]
+    population = [EPIndividual(dimensions, fitness, xmin=-30, xmax=30) for _ in range(mu_de)]
 
 
 def repeat(n, dimensions, fitnesses):
     for fitness in fitnesses:
         print("## " + fitness.__name__)
+        print("### Basic EP")
         for _ in range(n):
-            print("### Meta-EP")
-            metaEP(dimensions, fitness)
-
+            basicEP(dimensions, fitness)
+        print("### Differential evolution")
         for _ in range(n):
-            print("### Differential evolution")
             differential_evolution(dimensions, fitness)
 
 
@@ -76,11 +140,11 @@ def main(seed=None):
 
     # Rosenbrock function at D = 20
     print("# D = 20")
-    repeat(30, 20, [rosenbrock, griewank])
+    repeat(repeats, 20, [rosenbrock, griewank])
 
     print("# D = 50")
     # Griewank function at D = 20 and D = 50
-    repeat(30, 50, [griewank])
+    repeat(repeats, 50, [griewank])
 
 
 if __name__ == "__main__":
