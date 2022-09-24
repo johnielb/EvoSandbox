@@ -1,0 +1,8 @@
+---
+title: AIML426 Project 2
+author: Johniel Bocacao, 300490028
+date: 24 September 2022
+output: pdf_document
+---
+
+# 1. Evolutionary Programming
