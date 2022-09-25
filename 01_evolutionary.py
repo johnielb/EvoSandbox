@@ -145,13 +145,13 @@ def main(seed=None):
         np.random.seed(seed)
         random.seed(seed)
 
-    # Rosenbrock function at D = 20
+    # Rosenbrock and Griewank function at D = 20
     print("# D = 20")
     repeat(repeats, 20, [rosenbrock, griewank])
 
     print("# D = 50")
-    # Griewank function at D = 20 and D = 50
-    repeat(repeats, 50, [griewank])
+    # Rosenbrock function at D = 50
+    repeat(repeats, 50, [rosenbrock])
 
 
 if __name__ == "__main__":
