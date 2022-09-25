@@ -1,11 +1,14 @@
 import copy
+import operator
 import random
+from functools import reduce
 
 import numpy as np
+from scipy.stats import cauchy
 
 # HYPERPARAMETERS
 # Meta-EP
-mu_meta = 50
+mu_meta = 100
 beta = (30-(-30))/10
 gamma = 0
 # epsilon = (30-(-30))/10
@@ -16,6 +19,10 @@ mu_de = 50
 
 def generate_standard_normal_vector(length):
     return np.array([random.normalvariate(0, 1) for _ in range(length)])
+
+
+def generate_cauchy_vector(length):
+    return cauchy.rvs(size=length)
 
 
 def generate_uniform_vector(length, xmin, xmax):
@@ -31,7 +38,7 @@ class EPIndividual:
         self.xmin = xmin
         self.xmax = xmax
         self.vector = generate_uniform_vector(n, xmin, xmax)
-        # self.variance = generate_uniform_vector(n, xmin, xmax)
+        self.variance = np.array([3.0 for _ in range(n)])
         self.evaluator = evaluator
         self.fitness = None
         self.f = None
@@ -55,15 +62,24 @@ class EPIndividual:
     def __repr__(self):
         return '{:,}'.format(round(self.fitness, 4))
 
+    def __hash__(self):
+        return hash(tuple(self.vector) + tuple(self.variance))
+
     def mutate(self):
         if self.fitness is None:
             self.evaluate()
 
         offspring = copy.deepcopy(self)
 
-        vector_increment = generate_standard_normal_vector(len(self.vector))  # r_xi
-        vector_increment *= np.sqrt(beta * self.f + gamma)  # times sqrt(v_i)
+        n = len(self.vector)
+        vector_increment = generate_cauchy_vector(n)  # delta_i
+        vector_increment *= offspring.variance  # times eta_i
         offspring.vector += vector_increment
+
+        tau = 1 / np.sqrt(2*(np.sqrt(n)))
+        tau_prime = 1 / np.sqrt(2*n)
+        offspring.variance *= np.exp(tau_prime * random.normalvariate(0, 1) +
+                                     tau * generate_standard_normal_vector(n))
 
         # variance_increment = generate_standard_normal_vector(len(self.variance))  # r_vi
         # variance_increment *= np.sqrt(abs(self.variance * var_control))  # times sqrt(c*v_i)
@@ -75,7 +91,7 @@ class EPIndividual:
 
     def evaluate(self):
         if any(x < self.xmin or x > self.xmax for x in self.vector):
-            return np.inf
+            self.fitness = np.inf
 
         self.fitness = self.evaluator(self) + 1
 
@@ -101,17 +117,29 @@ def griewank(individual):
 
 def basicEP(dimensions, fitness):
     population = [EPIndividual(dimensions, fitness, xmin=-30, xmax=30) for _ in range(mu_meta)]
+    for individual in population:
+        individual.evaluate()
     for _ in range(50):
         offspring = []
-        for individual in population:
-            individual.evaluate()
         for individual in population:
             individual.f = min_max_normalise(individual.fitness,
                                              1, 2,
                                              min(population).fitness, max(population).fitness)
             child = individual.mutate()
             offspring.append(child)
-        population = sorted(population + offspring)[0:mu_meta]
+        # Tournament time
+        tournament_pool = population + offspring
+        q = int(mu_meta * 0.1)
+        for individual in tournament_pool:
+            opponents = random.sample(set(tournament_pool) - {individual}, q)
+            individual.wins = reduce(operator.add,
+                                     map(lambda _: 1,
+                                         filter(lambda x: x.fitness > individual.fitness,
+                                                opponents)),
+                                     0)
+
+        population = sorted(tournament_pool, key=lambda x: x.wins, reverse=True)[0:mu_meta]
+        population = sorted(population)
 
     print(population[0].fitness)
 
