@@ -8,9 +8,10 @@ from scipy.stats import cauchy
 
 # HYPERPARAMETERS
 # Meta-EP
+gens_meta = 50
 mu_meta = 100
-beta = (30-(-30))/10
-gamma = 0
+# beta = (30 - (-30)) / 10
+# gamma = 0
 # epsilon = (30-(-30))/10
 # var_control = 1
 # Diff ev
@@ -72,12 +73,10 @@ class EPIndividual:
         offspring = copy.deepcopy(self)
 
         n = len(self.vector)
-        vector_increment = generate_cauchy_vector(n)  # delta_i
-        vector_increment *= offspring.variance  # times eta_i
-        offspring.vector += vector_increment
+        offspring.vector += offspring.variance * generate_cauchy_vector(n)  # delta_i times eta_i
 
-        tau = 1 / np.sqrt(2*(np.sqrt(n)))
-        tau_prime = 1 / np.sqrt(2*n)
+        tau = 1 / np.sqrt(2 * (np.sqrt(n)))
+        tau_prime = 1 / np.sqrt(2 * n)
         offspring.variance *= np.exp(tau_prime * random.normalvariate(0, 1) +
                                      tau * generate_standard_normal_vector(n))
 
@@ -87,22 +86,22 @@ class EPIndividual:
         # offspring.variance = np.maximum(variance_increment, epsilon)
 
         offspring.evaluate()
+        if np.isinf(offspring.fitness):
+            return self.mutate()
+
         return offspring
 
     def evaluate(self):
         if any(x < self.xmin or x > self.xmax for x in self.vector):
             self.fitness = np.inf
+            return
 
-        self.fitness = self.evaluator(self) + 1
+        self.fitness = self.evaluator(self)
 
 
 def rosenbrock(individual):
-    fitness = 0
-    for d in range(0, len(individual.vector) - 1):
-        fitness += 100 * (individual.vector[d] ** 2 - individual.vector[d + 1] ** 2) ** 2 + (
-                individual.vector[d] - 1) ** 2
-
-    return fitness
+    return sum(100 * (x * x - y) ** 2 + (1. - x) ** 2 \
+               for x, y in zip(individual.vector[:-1], individual.vector[1:]))
 
 
 def griewank(individual):
@@ -119,14 +118,12 @@ def basicEP(dimensions, fitness):
     population = [EPIndividual(dimensions, fitness, xmin=-30, xmax=30) for _ in range(mu_meta)]
     for individual in population:
         individual.evaluate()
-    for _ in range(50):
+    for _ in range(gens_meta):
         offspring = []
         for individual in population:
-            individual.f = min_max_normalise(individual.fitness,
-                                             1, 2,
-                                             min(population).fitness, max(population).fitness)
             child = individual.mutate()
             offspring.append(child)
+
         # Tournament time
         tournament_pool = population + offspring
         q = int(mu_meta * 0.1)
@@ -150,7 +147,7 @@ def differential_evolution(dimensions, fitness):
 
 def repeat(n, dimensions, fitnesses):
     for fitness in fitnesses:
-        print("## " + fitness.__name__)
+        print("## " + fitness.__name__.title())
         print("### Basic EP")
         for _ in range(n):
             basicEP(dimensions, fitness)
