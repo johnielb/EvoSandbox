@@ -2,6 +2,7 @@ import copy
 import random
 
 import numpy as np
+import pandas as pd
 
 # HYPERPARAMETERS
 # Meta-EP
@@ -71,6 +72,9 @@ class EPIndividual:
         # offspring.variance = np.maximum(variance_increment, epsilon)
 
         offspring.evaluate()
+        if np.isinf(offspring.fitness):
+            return self.mutate()
+
         return offspring
 
     def evaluate(self):
@@ -83,7 +87,7 @@ class EPIndividual:
 def rosenbrock(individual):
     fitness = 0
     for d in range(0, len(individual.vector) - 1):
-        fitness += 100 * (individual.vector[d] ** 2 - individual.vector[d + 1] ** 2) ** 2 + (
+        fitness += 100 * (individual.vector[d] ** 2 - individual.vector[d + 1]) ** 2 + (
                 individual.vector[d] - 1) ** 2
 
     return fitness
@@ -113,7 +117,7 @@ def basicEP(dimensions, fitness):
             offspring.append(child)
         population = sorted(population + offspring)[0:mu_meta]
 
-    print(population[0].fitness)
+    return population[0].fitness
 
 
 def differential_evolution(dimensions, fitness):
@@ -122,13 +126,16 @@ def differential_evolution(dimensions, fitness):
 
 def repeat(n, dimensions, fitnesses):
     for fitness in fitnesses:
-        print("## " + fitness.__name__)
+        print("## " + fitness.__name__.title())
         print("### Basic EP")
-        for _ in range(n):
-            basicEP(dimensions, fitness)
+        stats_ep = pd.DataFrame(columns=["Gen", "Best"])
+        for i in range(n):
+            best = basicEP(dimensions, fitness)
+            stats_ep.loc[i] = [i, best]
+        print(stats_ep["Best"].describe())
         print("### Differential evolution")
-        for _ in range(n):
-            differential_evolution(dimensions, fitness)
+        # for _ in range(n):
+        #     differential_evolution(dimensions, fitness)
 
 
 def main(seed=None):
