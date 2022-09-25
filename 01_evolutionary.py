@@ -4,6 +4,7 @@ import random
 from functools import reduce
 
 import numpy as np
+import pandas as pd
 from scipy.stats import cauchy
 
 # HYPERPARAMETERS
@@ -100,8 +101,12 @@ class EPIndividual:
 
 
 def rosenbrock(individual):
-    return sum(100 * (x * x - y) ** 2 + (1. - x) ** 2 \
-               for x, y in zip(individual.vector[:-1], individual.vector[1:]))
+    fitness = 0
+    for d in range(0, len(individual.vector) - 1):
+        fitness += 100 * (individual.vector[d] ** 2 - individual.vector[d + 1]) ** 2 + (
+                individual.vector[d] - 1) ** 2
+
+    return fitness
 
 
 def griewank(individual):
@@ -138,7 +143,7 @@ def basicEP(dimensions, fitness):
         population = sorted(tournament_pool, key=lambda x: x.wins, reverse=True)[0:mu_meta]
         population = sorted(population)
 
-    print(population[0].fitness)
+    return population[0].fitness
 
 
 def differential_evolution(dimensions, fitness):
@@ -149,11 +154,14 @@ def repeat(n, dimensions, fitnesses):
     for fitness in fitnesses:
         print("## " + fitness.__name__.title())
         print("### Basic EP")
-        for _ in range(n):
-            basicEP(dimensions, fitness)
+        stats_ep = pd.DataFrame(columns=["Gen", "Best"])
+        for i in range(n):
+            best = basicEP(dimensions, fitness)
+            stats_ep.loc[i] = [i, best]
+        print(stats_ep["Best"].describe())
         print("### Differential evolution")
-        for _ in range(n):
-            differential_evolution(dimensions, fitness)
+        # for _ in range(n):
+        #     differential_evolution(dimensions, fitness)
 
 
 def main(seed=None):
@@ -163,13 +171,13 @@ def main(seed=None):
         np.random.seed(seed)
         random.seed(seed)
 
-    # Rosenbrock function at D = 20
+    # Rosenbrock and Griewank function at D = 20
     print("# D = 20")
     repeat(repeats, 20, [rosenbrock, griewank])
 
     print("# D = 50")
-    # Griewank function at D = 20 and D = 50
-    repeat(repeats, 50, [griewank])
+    # Rosenbrock function at D = 50
+    repeat(repeats, 50, [rosenbrock])
 
 
 if __name__ == "__main__":
