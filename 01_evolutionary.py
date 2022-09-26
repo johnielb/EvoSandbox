@@ -9,7 +9,7 @@ from scipy.stats import cauchy
 
 # HYPERPARAMETERS
 # Meta-EP
-gens_meta = 50
+gens_meta = 500
 mu_meta = 100
 # beta = (30 - (-30)) / 10
 # gamma = 0
@@ -43,7 +43,6 @@ class EPIndividual:
         self.variance = np.array([3.0 for _ in range(n)])
         self.evaluator = evaluator
         self.fitness = None
-        self.f = None
 
     def __lt__(self, other):
         if self.fitness is None:
@@ -71,24 +70,22 @@ class EPIndividual:
         if self.fitness is None:
             self.evaluate()
 
-        offspring = copy.deepcopy(self)
+        offspring = None
 
-        n = len(self.vector)
-        offspring.vector += offspring.variance * generate_cauchy_vector(n)  # delta_i times eta_i
+        for _ in range(20):
+            n = len(self.vector)
 
-        tau = 1 / np.sqrt(2 * (np.sqrt(n)))
-        tau_prime = 1 / np.sqrt(2 * n)
-        offspring.variance *= np.exp(tau_prime * random.normalvariate(0, 1) +
-                                     tau * generate_standard_normal_vector(n))
+            offspring = copy.deepcopy(self)
+            offspring.vector += offspring.variance * generate_cauchy_vector(n)  # delta_i times eta_i
 
-        # variance_increment = generate_standard_normal_vector(len(self.variance))  # r_vi
-        # variance_increment *= np.sqrt(abs(self.variance * var_control))  # times sqrt(c*v_i)
-        # offspring.variance += variance_increment
-        # offspring.variance = np.maximum(variance_increment, epsilon)
+            tau = 1 / np.sqrt(2 * (np.sqrt(n)))
+            tau_prime = 1 / np.sqrt(2 * n)
+            offspring.variance *= np.exp(tau_prime * random.normalvariate(0, 1) +
+                                         tau * generate_standard_normal_vector(n))
 
-        offspring.evaluate()
-        if np.isinf(offspring.fitness):
-            return self.mutate()
+            offspring.evaluate()
+            if not np.isinf(offspring.fitness):
+                break
 
         return offspring
 
@@ -133,7 +130,7 @@ def basicEP(dimensions, fitness):
         tournament_pool = population + offspring
         q = int(mu_meta * 0.1)
         for individual in tournament_pool:
-            opponents = random.sample(set(tournament_pool) - {individual}, q)
+            opponents = random.sample(list(set(tournament_pool) - {individual}), q)
             individual.wins = reduce(operator.add,
                                      map(lambda _: 1,
                                          filter(lambda x: x.fitness > individual.fitness,
@@ -157,6 +154,7 @@ def repeat(n, dimensions, fitnesses):
         stats_ep = pd.DataFrame(columns=["Gen", "Best"])
         for i in range(n):
             best = basicEP(dimensions, fitness)
+            print(best)
             stats_ep.loc[i] = [i, best]
         print(stats_ep["Best"].describe())
         print("### Differential evolution")
@@ -165,7 +163,7 @@ def repeat(n, dimensions, fitnesses):
 
 
 def main(seed=None):
-    repeats = 30
+    repeats = 5
 
     if seed is not None:
         np.random.seed(seed)
@@ -173,7 +171,7 @@ def main(seed=None):
 
     # Rosenbrock and Griewank function at D = 20
     print("# D = 20")
-    repeat(repeats, 20, [rosenbrock, griewank])
+    repeat(repeats, 20, [rosenbrock])  #, griewank
 
     print("# D = 50")
     # Rosenbrock function at D = 50
