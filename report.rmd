@@ -6,3 +6,31 @@ output: pdf_document
 ---
 
 # 1. Evolutionary Programming
+
+I chose to use fast EP after iteratively adding onto a basic EP implementation and finding it performed better at each iteration (admittedly without tuning parameters rigorously). This improvement may be due to the higher explorability associated with features of EP, such as the fat-tailed Cauchy distribution giving higher values in extreme values, and adaptive mutation enabling varying amounts of exploration and exploitation when needed.
+
+I chose to use differential evolution due to its relative simplicity and elegance in its algorithm and its associated parameters and hyperparameters. Compared with evolutionary strategies, mutation levels doesn't need to be memorised and adjusted, and has the benefits of social learning (explore first, exploit when optimal) with its mutation operation.
+
+The fitness function is simply the two given formulas as their optima are minima at 0. The solution encoding is a list of continuous floats, representing each dimension that contributes to the function. The stopping criterion is simply after 250 epochs, where all algorithms reach satisfactory fitness.
+
+| Run                    | Mean    | Standard deviation |
+|------------------------|---------|--------------------|
+| **Rosenbrock, d=20**   |
+| Fast EP                | 6779.77 | 16686.37           |
+| Differential evolution | 4120.26 | 1400.46            |
+| **Griewank, d=20**     |
+| Fast EP                | 0.36103 | 0.22628            |
+| Differential evolution | 0.45370 | 0.06709            |
+| **Rosenbrock, d=50**   |
+| Fast EP                | 6779.77 | 16686.37           |
+| Differential evolution | 4120.26 | 1400.46            |
+
+At d=20, the Rosenbrock function had a 40% lower cost under differential evolution compared with fast EP. Differential evolution was also favourable due to its lower standard deviation (i.e. variability of results, thus reliably lower than fast EP), at 1400 - less than a tenth of that of fast EP, 16700.
+
+The Griewank function showed different results, with a 20% lower cost under fast EP compared with differential evolution. What does remain the same across the two functions is differential evolution's low variability. This means some runs of fast EP have a greater cost (max 0.93657) than differential evolution (max 0.573862).
+
+# 2. Estimation of Distribution Algorithm
+
+
+# 3. Cooperative Co-evolution Genetic Programming
+
