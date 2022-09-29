@@ -22,12 +22,16 @@ The fitness function is simply the two given formulas as their optima are minima
 | Fast EP                | 0.36103 | 0.22628            |
 | Differential evolution | 0.45370 | 0.06709            |
 | **Rosenbrock, d=50**   |
-| Fast EP                | 6779.77 | 16686.37           |
-| Differential evolution | 4120.26 | 1400.46            |
+| Fast EP                | 5078777 | 2613442            |
+| Differential evolution | 4307689 | 790528.8           |
 
 At d=20, the Rosenbrock function had a 40% lower cost under differential evolution compared with fast EP. Differential evolution was also favourable due to its lower standard deviation (i.e. variability of results, thus reliably lower than fast EP), at 1400 - less than a tenth of that of fast EP, 16700.
 
 The Griewank function showed different results, with a 20% lower cost under fast EP compared with differential evolution. What does remain the same across the two functions is differential evolution's low variability. This means some runs of fast EP have a greater cost (max 0.93657) than differential evolution (max 0.573862).
+
+At d=50, the Rosenbrock function's cost has a much larger mean and standard deviation than at d=20, in the order of a thousand times more. This result demonstrates the difficulty of minimising the Rosenbrock function as dimensionality increases. This result may also reflect the need to tailor the hyperparameters, such as the population size, and stopping criterion further for a problem of this complexity.
+
+Like at d=20, the Rosenbrock function at d=50 also performed better with differential evolution, with a 15% lower cost. This result reinforces the conclusion that this technique is better than fast EP for this problem in particular.
 
 # 2. Estimation of Distribution Algorithm
 
