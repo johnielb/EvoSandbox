@@ -34,7 +34,14 @@ At d=50, the Rosenbrock function's cost has a much larger mean and standard devi
 Like at d=20, the Rosenbrock function at d=50 also performed better with differential evolution, with a 15% lower cost. This result reinforces the conclusion that this technique is better than fast EP for this problem in particular.
 
 # 2. Estimation of Distribution Algorithm
+* Determine the proper individual representation and explain the reasons.
+* Design the proper fitness function and justify its use.
+* Design and implement your EDA algorithm.
+* Set proper algorithm parameters, such as population size, individual selection criteria, and learning rate (subject to your choice of EDA variations).
+* For each knapsack problem instance, run your EDA implementation for 5 times with different random seeds. Present the mean and standard deviation of your EDA in the 5 runs.
+* Draw the convergence curve of your EDA implementation for each knapsack problem instance. The x-axis of your convergence curve represents the number of generations. The y-axis stands for the average fitness of the best solutions in the population of the x-th generation from the 5 runs. Discuss your convergence curve and draw your conclusions.
 
+![Convergence curves oer dataset by seed](out/fig1.png)
 
 # 3. Cooperative Co-evolution Genetic Programming
 
