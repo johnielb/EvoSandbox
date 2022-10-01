@@ -33,15 +33,28 @@ At d=50, the Rosenbrock function's cost has a much larger mean and standard devi
 
 Like at d=20, the Rosenbrock function at d=50 also performed better with differential evolution, with a 15% lower cost. This result reinforces the conclusion that this technique is better than fast EP for this problem in particular.
 
-# 2. Estimation of Distribution Algorithm
-* Determine the proper individual representation and explain the reasons.
-* Design the proper fitness function and justify its use.
-* Design and implement your EDA algorithm.
-* Set proper algorithm parameters, such as population size, individual selection criteria, and learning rate (subject to your choice of EDA variations).
-* For each knapsack problem instance, run your EDA implementation for 5 times with different random seeds. Present the mean and standard deviation of your EDA in the 5 runs.
-* Draw the convergence curve of your EDA implementation for each knapsack problem instance. The x-axis of your convergence curve represents the number of generations. The y-axis stands for the average fitness of the best solutions in the population of the x-th generation from the 5 runs. Discuss your convergence curve and draw your conclusions.
+The Griewank function performed significantly better in both algorithms than either of the Rosenbrock function runs. Both functions have their global minimum fitness at 0: the Rosenbrock function only converged at the 10^3-10^6 magnitude with the same amount of generations as the Griewank function did, which reached the 10^-1 magnitude. This result may be due to the greater amount of local minima close to 0 in the Griewank function, while the Rosenbrock function is shaped as a slow and narrow valley to 0. Neither necessarily are unsuccessful, as we may find with more generations (which would require more computational power than this assignment necessitates) both take similar times to get to the global minimum 0, with different obstacles to get there.
 
-![Convergence curves oer dataset by seed](out/fig1.png)
+# 2. Estimation of Distribution Algorithm
+We start with a randomly initialised population, with **500** individuals represented by a list of Booleans. This population size was chosen empirically after determining smaller sizes (that were successful in other evolutionary algorithms) did not enable a convergence to the stated optimal value. This representation encodes what an individual is: a series of Boolean choices whether to include an item in the knapsack, rather than a string of ASCII integers, for example. The individual selection criteria was a simple best-M selection, with elitism pre-populating the next generation with the top 5% of the parent generation to ensure that each generation's best individuals are not worse than the last, continuously improving each generation.
+
+Fitness is determined by summing the candidate’s value and penalising by how much the sum of its weight overshoots capacity (**alpha = 50**, constant). Instead of rejecting such an individual, this penalty promotes diversity in the generation, giving the algorithm more material.
+
+| Seed                  | 10_269 | 23_10000 | 100_995 |
+|-----------------------|--------|----------|---------|
+| 0                     | 295    | 9767     | 1514    |
+| 1                     | 295    | 9767     | 1513    |
+| 2                     | 295    | 9767     | 1514    |
+| 3                     | 295    | 9767     | 1514    |
+| 4                     | 295    | 9767     | 1514    |
+| Mean                  | 295    | 9767     | 1513.8  |
+| Optima                | 295    | 9767     | 1514    |
+| Deviation from optima | 0      | 0        | 0.2     |
+| Standard deviation    | 0      | 0        | 0.4     |
+
+![Convergence curves per dataset by seed](out/fig1.jpg)
+
+All files and seeds converged to the optimal value (with the slight exception of 100_995 seed 1 missing by 1). The simple 10_269 dataset had all seeds converging to the optimum 295 by the third epoch. The more complex 23_10000 dataset took around 15 epochs to converge to the optimum 9767. Unlike the other two, each seed's run had noticeable variability. This result reflects the similar (in weight and value) candidates in the set providing fewer options in smoothly converging to the optimum. This shortcoming is not evident in the 100_995 dataset with a greater variety (in weight and value) of candidates providing an obvious path to the optimum for all seeds (although seed 1's fitness was off by one, it still followed the same trajectory).
 
 # 3. Cooperative Co-evolution Genetic Programming
 

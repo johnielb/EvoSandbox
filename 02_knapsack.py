@@ -37,10 +37,6 @@ def parse_data_file(fname):
     return candidates, capacity
 
 
-def generate_population(length):
-    return [[random.choice([True, False]) for j in range(length)] for i in range(mu)]
-
-
 def evaluate(individual):
     alpha = 50
     value = 0
@@ -55,15 +51,6 @@ def evaluate(individual):
     return value - penalty
 
 
-def is_feasible(individual):
-    weight = 0
-    for n, item in enumerate(individual):
-        if item:
-            candidate = candidates[n]
-            weight += candidate[1]
-    return weight <= capacity
-
-
 def sort_population(i1, i2):
     return evaluate(i2) - evaluate(i1)
 
@@ -74,6 +61,7 @@ def main(fname):
     global candidates, capacity
     candidates, capacity = parse_data_file(fname)
     n = len(candidates)
+    solutions = []
 
     for seed in range(5):
         random.seed(seed)
@@ -83,7 +71,7 @@ def main(fname):
 
         # Randomly initialise a population of individuals (bit string, each bit has
         # 50% probability to be 1, and 50% to be 0)
-        population = generate_population(n)
+        population = [[random.choice([True, False]) for _ in range(n)] for _ in range(mu)]
         population = sorted(population, key=cmp_to_key(sort_population))
 
         seed_convergence = []
@@ -109,14 +97,19 @@ def main(fname):
         if verbose:
             print("Solution:", solution)
             print("Value:", evaluate(solution))
+        solutions.append(evaluate(solution))
         convergence.append(seed_convergence)
+
+    print(solutions)
+    print("Mean: %.2f" % np.mean(solutions))
+    print("SD: %.2f" % np.std(solutions))
 
     return pd.DataFrame(convergence).T
 
 
 if __name__ == '__main__':
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    for f in range(1, len(sys.argv)):  # start from 1, skip 0th argument - filename
+    for f in range(1, len(sys.argv)):  # start from 1, skip 0th argument - script filename
         df = main(sys.argv[f])
         ax[f-1].set_title(sys.argv[f])
         df.plot(ax=ax[f-1])
