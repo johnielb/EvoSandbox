@@ -54,7 +54,39 @@ Fitness is determined by summing the candidate’s value and penalising by how m
 
 ![Convergence curves per dataset by seed](out/fig1.jpg)
 
-All files and seeds converged to the optimal value (with the slight exception of 100_995 seed 1 missing by 1). The simple 10_269 dataset had all seeds converging to the optimum 295 by the third epoch. The more complex 23_10000 dataset took around 15 epochs to converge to the optimum 9767. Unlike the other two, each seed's run had noticeable variability. This result reflects the similar (in weight and value) candidates in the set providing fewer options in smoothly converging to the optimum. This shortcoming is not evident in the 100_995 dataset with a greater variety (in weight and value) of candidates providing an obvious path to the optimum for all seeds (although seed 1's fitness was off by one, it still followed the same trajectory).
+All files and seeds converged to the optimal value (with the slight exception of 100_995 seed 1 missing by 1). The
+simple 10_269 dataset had all seeds converging to the optimum 295 by the third epoch.
+
+The more complex 23_10000 dataset took around 15 epochs to converge to the optimum 9767. Unlike the other two, each
+seed's run had noticeable variability. This result reflects the similar (in weight and value) candidates in the set
+providing fewer options in smoothly converging to the optimum.
+
+This shortcoming is not evident in the 100_995 dataset with a greater variety (in weight and value) of candidates
+providing an obvious path to the optimum for all seeds (although seed 1's fitness was off by one, it still followed the
+same trajectory).
 
 # 3. Cooperative Co-evolution Genetic Programming
+For both subpopulations, the terminal set used in this problem consisted of a random float or a random bool (True or
+False), and the input of the function x. This set captures all the possible variable/terminal types in the regression problem.
 
+For both subpopulations, the function set in this problem added all the functions sufficient to capture the regression
+problem. The only assumption we can use is that it is a piecewise function, theoretically we don't know which functions
+are used in each piece of the function:
+- Add, subtract, and multiply, divide with protection if a zero is used as the denominator.
+- Sine only. Cosine is just a phase-shifted sine, so a problem with cosine (which this problem doesn't use) can be conveyed with sine.
+- Square. I initially tried a power function, but became too _complex_ to handle with negative bases.
+
+
+Design the fitness function and the fitness evaluation method for each sub-population.
+Set the necessary parameters, such as sub-population size, maximum tree depth, termination criteria, crossover and mutation rates.
+Run the implemented CCGP for 5 times with different random seeds. Report the best genetic programs (their structure and performance) of each of the 5 runs. Present your observations and discussions and draw your conclusions.
+
+| Seed | Best fitness (MSE, minimised) | Corresponding node length |
+|------|-------------------------------|---------------------------|
+| 0    |                               |                           |
+| 1    |                               |                           |
+| 2    |                               |                           |
+| 3    |                               |                           |
+| 4    |                               |                           |
+| Mean |                               |                           |
+| SD   |                               |                           |
