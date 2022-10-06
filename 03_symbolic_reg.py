@@ -16,6 +16,7 @@ from deap import creator, base, tools, algorithms, gp
 from deap.algorithms import varOr
 
 verbose = True
+num_species = 2
 mu = 1000
 p_cross = 0.75
 p_mutate = 0.25
@@ -81,7 +82,9 @@ def create_toolbox():
     toolbox.register("compile", gp.compile, pset=primitives)
 
     # Evaluate over x = {-10,-9,-8,...,8,9,10}
-    toolbox.register("evaluate", evaluate, points=[x / 5. for x in range(-25, 75)])
+    toolbox.register("evaluate", evaluate, points=[x / 5. for x in range(-50, 75)])
+    toolbox.register("evaluate1", evaluate, points=[x / 5. for x in range(-50, 0)])
+    toolbox.register("evaluate2", evaluate, points=[x / 5. for x in range(0, 75)])
     # Tournament selection, 3 participants
     toolbox.register("select", tools.selTournament, tournsize=3)
     toolbox.register("mate", gp.cxOnePoint)
@@ -104,12 +107,18 @@ creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 toolbox = create_toolbox()
 
 
+def update_context_vector(hofs, evals):
+
+    pass
+
+
 def main(seed=None):
     random.seed(seed)
     np.random.seed(seed)
 
-    pop = toolbox.population(n=mu)
-    hof = tools.HallOfFame(1)
+    pops = [toolbox.population(n=mu)] * 2
+    hofs = [tools.HallOfFame(1)] * 2
+    evals = [toolbox.evaluate1, toolbox.evaluate2]
 
     stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
     stats_size = tools.Statistics(len)
@@ -122,40 +131,40 @@ def main(seed=None):
     log = tools.Logbook()
     log.header = ['gen', 'nevals'] + mstats.fields
 
-    # Evaluate the individuals with an invalid fitness
-    invalid_ind = [ind for ind in pop if not ind.fitness.valid]
-    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-    for ind, fit in zip(invalid_ind, fitnesses):
-        ind.fitness.values = fit
-
-    hof.update(pop)
-
-    record = mstats.compile(pop)
-    log.record(gen=0, nevals=len(invalid_ind), **record)
-    print(log.stream)
-
-    # Begin the generational process
-    for gen in range(1, epochs + 1):
-        # Vary the population
-        offspring = varOr(pop, toolbox, mu, p_cross, p_mutate)
-
-        # Evaluate the individuals with an invalidated fitness
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+    for i, (pop, hof, evaluate) in enumerate(zip(pops, hofs, evals)):
+        # Evaluate the individuals with an invalid fitness
+        invalid_ind = [ind for ind in pop if not ind.fitness.valid]
+        fitnesses = toolbox.map(evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
 
         # Update the hall of fame with the generated individuals
-        hof.update(offspring)
+        hof.update(pop)
 
-        # MODIFIED: Select the next generation population by adding the most elite individuals from the last population,
-        # then populate with offspring
-        pop[:] = tools.selBest(pop, n_elite) + tools.selBest(offspring, mu - n_elite)
+    # Begin the generational process
+    for gen in range(0, epochs):
+        for i, (pop, hof, evaluate) in enumerate(zip(pops, hofs, evals)):
+            other_pop = int(not bool(i))
+            # Vary the population
+            offspring = varOr(pop, toolbox, mu, p_cross, p_mutate)
 
-        # Update the statistics with the new pop
-        record = mstats.compile(pop)
-        log.record(gen=gen, nevals=len(invalid_ind), **record)
-        print(log.stream)
+            # Evaluate the individuals with an invalidated fitness
+            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+            fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+            for ind, fit in zip(invalid_ind, fitnesses):
+                ind.fitness.values = fit + hofs[other_pop].keys[0].values
+
+            # Update the hall of fame with the generated individuals
+            hof.update(offspring)
+
+            # MODIFIED: Select the next generation population by adding the most elite individuals from the last population,
+            # then populate with offspring
+            pop[:] = tools.selBest(pop, n_elite) + tools.selBest(offspring, mu - n_elite)
+
+            # Update the statistics with the new pop
+            record = mstats.compile(pop)
+            log.record(gen=gen, pop=i, nevals=len(invalid_ind), **record)
+            print(log.stream)
 
     best_program = toolbox.compile(expr=hof.items[0])
     print("=== Best f(x) over [-5, 15) + 0.2 ===")
