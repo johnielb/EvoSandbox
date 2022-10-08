@@ -7,23 +7,16 @@ output: pdf_document
 
 # 1. Evolutionary Programming
 
-I chose to use fast EP after iteratively adding onto a basic EP implementation and finding it performed better at each iteration (admittedly without tuning parameters rigorously). This improvement may be due to the higher explorability associated with features of EP, such as the fat-tailed Cauchy distribution giving higher values in extreme values, and adaptive mutation enabling varying amounts of exploration and exploitation when needed.
+I chose to use fast EP after iterating on a basic EP implementation and finding it performed better at each iteration (admittedly without tuning parameters rigorously). This improvement may be due to the higher explorability associated with fast EP, such as the Cauchy distribution giving higher values in extreme values, and adaptive mutation enabling varying amounts of exploration and exploitation when needed.
 
 I chose to use differential evolution due to its relative simplicity and elegance in its algorithm and its associated parameters and hyperparameters. Compared with evolutionary strategies, mutation levels doesn't need to be memorised and adjusted, and has the benefits of social learning (explore first, exploit when optimal) with its mutation operation.
 
 The fitness function is simply the two given formulas as their optima are minima at 0. The solution encoding is a list of continuous floats, representing each dimension that contributes to the function. The stopping criterion is simply after 250 epochs, where all algorithms reach satisfactory fitness.
 
-| Run                    | Mean    | Standard deviation |
-|------------------------|---------|--------------------|
-| **Rosenbrock, d=20**   |
-| Fast EP                | 6779.77 | 16686.37           |
-| Differential evolution | 4120.26 | 1400.46            |
-| **Griewank, d=20**     |
-| Fast EP                | 0.36103 | 0.22628            |
-| Differential evolution | 0.45370 | 0.06709            |
-| **Rosenbrock, d=50**   |
-| Fast EP                | 5078777 | 2613442            |
-| Differential evolution | 4307689 | 790528.8           |
+| Algorithm      | **Rosenbrock (d=20)**: Mean | Std dev | **Griewank (d=20)**: Mean | Std dev | **Rosenbrock (d=50)**: Mean | Std dev |
+|----------------|-----------------------------|---------|---------------------------|---------|-----------------------------|---------|
+| Fast EP        | 6779.77                     | 16686.4 | 0.36103                   | 0.22628 | 5078777                     | 2613442 |
+| Diff evolution | 4120.26                     | 1400.5  | 0.45370                   | 0.06709 | 4307689                     | 790529  |
 
 At d=20, the Rosenbrock function had a 40% lower cost under differential evolution compared with fast EP. Differential evolution was also favourable due to its lower standard deviation (i.e. variability of results, thus reliably lower than fast EP), at 1400 - less than a tenth of that of fast EP, 16700.
 
@@ -33,12 +26,14 @@ At d=50, the Rosenbrock function's cost has a much larger mean and standard devi
 
 Like at d=20, the Rosenbrock function at d=50 also performed better with differential evolution, with a 15% lower cost. This result reinforces the conclusion that this technique is better than fast EP for this problem in particular.
 
-The Griewank function performed significantly better in both algorithms than either of the Rosenbrock function runs. Both functions have their global minimum fitness at 0: the Rosenbrock function only converged at the 10^3-10^6 magnitude with the same amount of generations as the Griewank function did, which reached the 10^-1 magnitude. This result may be due to the greater amount of local minima close to 0 in the Griewank function, while the Rosenbrock function is shaped as a slow and narrow valley to 0. Neither necessarily are unsuccessful, as we may find with more generations (which would require more computational power than this assignment necessitates) both take similar times to get to the global minimum 0, with different obstacles to get there.
+The Griewank function performed significantly better in both algorithms than either of the Rosenbrock function runs. Both functions have their global minimum fitness at 0: the Rosenbrock function only converged at the 10^3-10^6 magnitude with the same amount of generations as the Griewank function did, which reached the 10^-1 magnitude. This result may be due to the greater amount of local minima close to 0 in the Griewank function, while the Rosenbrock function is shaped as a slow and narrow valley to 0. Neither necessarily are unsuccessful, as we may find with more generations (which would require more compute than this assignment necessitates) both take similar times to get to the global minimum 0, with different obstacles to get there.
 
 # 2. Estimation of Distribution Algorithm
 We start with a randomly initialised population, with **500** individuals represented by a list of Booleans. This population size was chosen empirically after determining smaller sizes (that were successful in other evolutionary algorithms) did not enable a convergence to the stated optimal value. This representation encodes what an individual is: a series of Boolean choices whether to include an item in the knapsack, rather than a string of ASCII integers, for example. The individual selection criteria was a simple best-M selection, with elitism pre-populating the next generation with the top 5% of the parent generation to ensure that each generation's best individuals are not worse than the last, continuously improving each generation.
 
 Fitness is determined by summing the candidate’s value and penalising by how much the sum of its weight overshoots capacity (**alpha = 50**, constant). Instead of rejecting such an individual, this penalty promotes diversity in the generation, giving the algorithm more material.
+
+![Convergence curves per dataset by seed](out/fig1.jpg){width=85%}
 
 | Seed                  | 10_269 | 23_10000 | 100_995 |
 |-----------------------|--------|----------|---------|
@@ -52,8 +47,6 @@ Fitness is determined by summing the candidate’s value and penalising by how m
 | Deviation from optima | 0      | 0        | 0.2     |
 | Standard deviation    | 0      | 0        | 0.4     |
 
-![Convergence curves per dataset by seed](out/fig1.jpg)
-
 All files and seeds converged to the optimal value (with the slight exception of 100_995 seed 1 missing by 1). The
 simple 10_269 dataset had all seeds converging to the optimum 295 by the third epoch.
 
@@ -66,27 +59,69 @@ providing an obvious path to the optimum for all seeds (although seed 1's fitnes
 same trajectory).
 
 # 3. Cooperative Co-evolution Genetic Programming
-For both subpopulations, the terminal set used in this problem consisted of a random float or a random bool (True or
-False), and the input of the function x. This set captures all the possible variable/terminal types in the regression problem.
+Both subpopulations' terminal set consisted of a random float or a random bool (True or False), and the input of the
+function x. This set captures all the possible variable/terminal types in the regression problem.
 
-For both subpopulations, the function set in this problem added all the functions sufficient to capture the regression
-problem. The only assumption we can use is that it is a piecewise function, theoretically we don't know which functions
-are used in each piece of the function:
+Both subpopulations' function set added all the functions sufficient to capture the regression problem. The only
+assumption we can use to design the algorithm is that it is a piecewise function. Theoretically, we don't know which
+functions are used in each piece of the function:
 - Add, subtract, and multiply, divide with protection if a zero is used as the denominator.
 - Sine only. Cosine is just a phase-shifted sine, so a problem with cosine (which this problem doesn't use) can be conveyed with sine.
 - Square. I initially tried a power function, but became too _complex_ to handle with negative bases.
 
+Each subpopulation has its own fitness function and evaluation method. This design is due to the independence of the
+two components' contribution to the overall problem. Dividing and conquering by evaluating their own domain sends a
+stronger training signal and results in a stronger subpopulation than evaluating the entire problem as a whole. Thus,
+population 1 (x > 0) is evaluated against the corresponding true function (1/x + sin x), finding the mean squared error
+for points from 0.2 to 15 inclusive, stepping up by 0.2 which should be enough to capture all the variation in the function.
+Population 2 (x <= 0) is evaluated against the corresponding true function (2x + x^2 + 3), finding the mean squared error
+for points from -15 to 0 inclusive, stepping up by 0.2 which should be enough to capture all the variation in the function.
 
-Design the fitness function and the fitness evaluation method for each sub-population.
-Set the necessary parameters, such as sub-population size, maximum tree depth, termination criteria, crossover and mutation rates.
-Run the implemented CCGP for 5 times with different random seeds. Report the best genetic programs (their structure and performance) of each of the 5 runs. Present your observations and discussions and draw your conclusions.
+The subpopulation size was set at 1000, enough to capture the complexity of the problem. The maximum tree depth is
+shorter than in traditional GP, due to the relatively simpler nature of each subproblem after dividing up the problem.
+The termination criteria is after 100 epochs, after which it was observed that the fitness could reach 0 for some seeds.
+The mutation rate was set at 10%, while crossover at 90%. A slightly conservative mutation rate reflects the simpler
+nature of the two subproblems, encouraging exploitation as new material is not needed as often as in traditional GP.
 
-| Seed | Best fitness (MSE, minimised) | Corresponding node length |
-|------|-------------------------------|---------------------------|
-| 0    |                               |                           |
-| 1    |                               |                           |
-| 2    |                               |                           |
-| 3    |                               |                           |
-| 4    |                               |                           |
-| Mean |                               |                           |
-| SD   |                               |                           |
+| Seed | Subpopulation 1 - Best fitness (MSE, minimised) | Number of nodes  | Subpopulation 2 - Best fitness (MSE, minimised) | Number of nodes |
+|------|-------------------------------------------------|------------------|-------------------------------------------------|-----------------|
+| 0    | 0                                               | 8                | 10^-33                                          | 18              |
+| 1    | 0                                               | 9                | 10^-9                                           | 24              |
+| 2    | 0                                               | 8                | 10^-5                                           | 15              |
+| 3    | 0                                               | 10               | 0.01961                                         | 16              |
+| 4    | 0                                               | 14               | 0.33740                                         | 20              |
+| Mean | 0                                               | 9.8              | 0.07141                                         | 18.6            |
+| SD   | 0                                               | 2.227            | 0.13321                                         | 3.2             |
+
+All seeds found a perfect representation of subpopulation 1's function, which is understandable as there are fewer terms
+to represent in that function. Subpopulation 2's fitness showed the most variability.
+
+![Best program - seed 0](out/part3/0_tree.png){height=40%}
+
+Seed 0's best individual (Figure 2) had the closest fitness/MSE to 0. Instead of using random constants, it used x/x = 1 three
+times to get a perfect +3 constant for the second subpopulation's equation. This program is actually the most
+parsimonious tree to approximate each true function if the x/x method is used. Division by itself with certain float
+inputs is the likely explanation for the infinitesimally small MSE (10^-31) for the second subpopulation.
+
+![Best program - seed 1](out/part3/1_tree.png){height=40%}
+
+Seed 1's best individual (Figure 3) also had a fitness/MSE close to 0, but did not get as close due to its use of random constants
+such as 2.78 and 12.49. However, the constants ended up summing very close to 3, resulting in a very small MSE (10^-9).
+This result makes the case for adding random integers in the terminal set.
+
+![Best program - seed 2](out/part3/2_tree.png){height=40%}
+
+Seed 2's best individual (Figure 4) had a similar situation as that of seed 1. However, the constants in the second subpopulation
+did not get as close to summing to 3, resulting in an MSE roughly double in magnitude (~10^-5 vs seed 1's ~10^-9).
+
+![Best program - seed 3](out/part3/3_tree.png){height=40%}
+
+Seed 3's best individual (Figure 5) works out to effectively have the mathematical representation as the true function when
+simplified. However, the individual uses several nested divide functions, which, in Python with its interesting floating
+point implementation, has lead to a relatively larger MSE (~10^-2).
+
+![Best program - seed 4](out/part3/4_tree.png){height=40%}
+
+Seed 4's best individual (Figure 6) didn't quite converge to a reasonable representation of the second subpopulation's function,
+and had a complicated way of representing the first subpopulation's function, however correct. The former fact explains
+the relatively massive MSE (0.34) for the second subpopulation.

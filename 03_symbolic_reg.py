@@ -193,7 +193,7 @@ def main(seed=None):
         g.add_edge(0, base)
 
     g.layout(prog="dot")
-    g.draw("out/part3/"+str(seed)+"_tree.pdf")
+    g.draw("out/part3/"+str(seed)+"_tree.png")
 
 
 if __name__ == '__main__':
