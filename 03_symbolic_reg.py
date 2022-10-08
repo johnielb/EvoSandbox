@@ -11,22 +11,21 @@ from pprint import pprint
 
 import numpy
 import numpy as np
-import pandas as pd
-from deap import creator, base, tools, algorithms, gp
+import pygraphviz as pgv
+from deap import creator, base, tools, gp
 from deap.algorithms import varOr
 
-verbose = True
-num_species = 2
+verbose = False
 mu = 1000
-p_cross = 0.75
-p_mutate = 0.25
-n_elite = int(mu*0.05)
-epochs = 200
-init_min_depth = 2
-init_max_depth = 6
-max_depth = 15
-mutate_min_depth = 2
-mutate_max_depth = 6
+p_cross = 0.9
+p_mutate = 0.1
+n_elite = int(mu*0.1)
+epochs = 100
+init_min_depth = 1
+init_max_depth = 3
+max_depth = 6
+mutate_min_depth = 1
+mutate_max_depth = 3
 
 
 def create_primitive_set():
@@ -83,8 +82,8 @@ def create_toolbox():
 
     # Evaluate over x = {-10,-9,-8,...,8,9,10}
     toolbox.register("evaluate", evaluate, points=[x / 5. for x in range(-50, 75)])
-    toolbox.register("evaluate1", evaluate, points=[x / 5. for x in range(-50, 0)])
-    toolbox.register("evaluate2", evaluate, points=[x / 5. for x in range(0, 75)])
+    toolbox.register("evaluate1", evaluate, points=[x / 5. for x in range(1, 75)])
+    toolbox.register("evaluate2", evaluate, points=[x / 5. for x in range(-50, 1)])
     # Tournament selection, 3 participants
     toolbox.register("select", tools.selTournament, tournsize=3)
     toolbox.register("mate", gp.cxOnePoint)
@@ -107,17 +106,12 @@ creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 toolbox = create_toolbox()
 
 
-def update_context_vector(hofs, evals):
-
-    pass
-
-
 def main(seed=None):
     random.seed(seed)
     np.random.seed(seed)
 
-    pops = [toolbox.population(n=mu)] * 2
-    hofs = [tools.HallOfFame(1)] * 2
+    pops = [toolbox.population(n=mu), toolbox.population(n=mu)]
+    hofs = [tools.HallOfFame(1), tools.HallOfFame(1)]
     evals = [toolbox.evaluate1, toolbox.evaluate2]
 
     stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
@@ -144,15 +138,14 @@ def main(seed=None):
     # Begin the generational process
     for gen in range(0, epochs):
         for i, (pop, hof, evaluate) in enumerate(zip(pops, hofs, evals)):
-            other_pop = int(not bool(i))
             # Vary the population
             offspring = varOr(pop, toolbox, mu, p_cross, p_mutate)
 
             # Evaluate the individuals with an invalidated fitness
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+            fitnesses = toolbox.map(evaluate, invalid_ind)
             for ind, fit in zip(invalid_ind, fitnesses):
-                ind.fitness.values = fit + hofs[other_pop].keys[0].values
+                ind.fitness.values = fit
 
             # Update the hall of fame with the generated individuals
             hof.update(offspring)
@@ -164,39 +157,46 @@ def main(seed=None):
             # Update the statistics with the new pop
             record = mstats.compile(pop)
             log.record(gen=gen, pop=i, nevals=len(invalid_ind), **record)
-            print(log.stream)
-
-    best_program = toolbox.compile(expr=hof.items[0])
-    print("=== Best f(x) over [-5, 15) + 0.2 ===")
-    print("Fitness =", hof.keys[0])
-    print("Size =", len(hof.items[0]))
-    print(str(hof.items[0]))
-    pprint([best_program(x / 5.) for x in range(-25, 75)])
-
-    nodes, edges, labels = gp.graph(hof.items[0])
-    for i in labels:
-        if isinstance(labels[i], float):
-            labels[i] = round(labels[i], 2)
-
-    # Visualise tree
-    import pygraphviz as pgv
+            if verbose:
+                print(log.stream)
 
     g = pgv.AGraph()
-    g.add_nodes_from(nodes)
-    g.add_edges_from(edges)
+    g.node_attr['style'] = 'filled'
+    g.add_node(0)
+    g.get_node(0).attr["label"] = "if"
+    g.get_node(0).attr["fillcolor"] = "#cccccc"
+    g.add_node(1)
+    g.get_node(1).attr["label"] = "x>0"
+    g.get_node(1).attr["fillcolor"] = "#cccccc"
+    g.add_edge(0, 1)
+
+    colors = ["#f597bb", "#a5abee"]
+    for pop, hof in enumerate(hofs):
+        best_program = toolbox.compile(expr=hof.items[0])
+        print("## Best individual in population", str(pop + 1))
+        print("Fitness =", hof.keys[0])
+        print("Size =", len(hof.items[0]))
+        if verbose:
+            print(str(hof.items[0]))
+            pprint([best_program(x / 5.) for x in range(-25, 75)])
+
+        nodes, edges, labels = gp.graph(hof.items[0])
+        base = g.number_of_nodes()
+        g.add_nodes_from([base + i for i in nodes])
+        g.add_edges_from([(base + i, base + j) for (i, j) in edges])
+        for i in labels:
+            n = g.get_node(base + i)
+            if isinstance(labels[i], float):
+                labels[i] = round(labels[i], 2)
+            n.attr["label"] = labels[i]
+            n.attr["fillcolor"] = colors[pop]
+        g.add_edge(0, base)
+
     g.layout(prog="dot")
-
-    for i in nodes:
-        n = g.get_node(i)
-        n.attr["label"] = labels[i]
-
-    g.draw("out/part4/"+str(seed)+"_tree.pdf")
-    log_df = pd.DataFrame(log.chapters["fitness"])
-    log_df.to_csv("out/part4/"+str(seed)+"_log.csv")
-
-    return pop, log, hof
+    g.draw("out/part3/"+str(seed)+"_tree.pdf")
 
 
 if __name__ == '__main__':
-    for seed in range(3):
+    for seed in range(5):
+        print("# Seed", str(seed))
         main(seed)
