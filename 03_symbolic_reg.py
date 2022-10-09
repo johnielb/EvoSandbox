@@ -80,7 +80,7 @@ def create_toolbox():
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("compile", gp.compile, pset=primitives)
 
-    # Evaluate over x = {-10,-9,-8,...,8,9,10}
+    # Evaluate over x = [-10, 15] step by 1/5
     toolbox.register("evaluate", evaluate, points=[x / 5. for x in range(-50, 75)])
     toolbox.register("evaluate1", evaluate, points=[x / 5. for x in range(1, 75)])
     toolbox.register("evaluate2", evaluate, points=[x / 5. for x in range(-50, 1)])

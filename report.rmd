@@ -125,3 +125,7 @@ point implementation, has lead to a relatively larger MSE (~10^-2).
 Seed 4's best individual (Figure 6) didn't quite converge to a reasonable representation of the second subpopulation's function,
 and had a complicated way of representing the first subpopulation's function, however correct. The former fact explains
 the relatively massive MSE (0.34) for the second subpopulation.
+
+# 4.
+
+# 5.
