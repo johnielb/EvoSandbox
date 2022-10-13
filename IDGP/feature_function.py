@@ -1,7 +1,7 @@
-from feature_extractors import featureDIF
-from feature_extractors import hog_features_patches as hog_features
-from feature_extractors import histLBP
-import sift_features
+from .feature_extractors import featureDIF
+from .feature_extractors import hog_features_patches as hog_features
+from .feature_extractors import histLBP
+from . import sift_features
 import numpy
 from skimage.feature import hog
 
