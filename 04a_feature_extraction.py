@@ -8,6 +8,7 @@ import numpy as np
 from deap import base, creator, tools, gp
 from sklearn import preprocessing
 from sklearn.exceptions import ConvergenceWarning
+from sklearn.metrics import f1_score
 from sklearn.model_selection import cross_val_score
 from sklearn.svm import SVC
 
@@ -74,10 +75,12 @@ def evaluate(individual, x, y, classifier, cv=True, **kwargs):
     # print(train_norm.shape)
     clf = classifier(**kwargs)
     if cv:
-        metric = round(cross_val_score(clf, train_norm, y, scoring="f1", cv=3).mean(), 6)
+        metric = round(cross_val_score(clf, train_norm, y, scoring="f1", cv=3).mean(), 6),
     else:
-        metric = round(clf.score(x, y), 6)
-    return metric,
+        clf.fit(train_norm, y)
+        pred = clf.predict(train_norm)
+        metric = (f1_score(pred, y), clf.score(train_norm, y))
+    return metric
 
 
 def build_toolbox(data, x_train, y_train, classifier, **kwargs):
@@ -164,6 +167,6 @@ if __name__ == "__main__":
         features_test = transform(best, toolbox, x_test, y_test)
         np.savetxt("out/part4/{}_features_test.csv".format(data), features_test, delimiter=",")
 
-        print(data + " test score: " + str(evaluate(best, x_test, y_test, SVC, True)))
+        print(data + " test score: " + str(evaluate(best, x_test, y_test, SVC, False)))
         print("Best individual: " + str(best))
 

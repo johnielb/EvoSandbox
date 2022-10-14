@@ -126,6 +126,30 @@ Seed 4's best individual (Figure 6) didn't quite converge to a reasonable repres
 and had a complicated way of representing the first subpopulation's function, however correct. The former fact explains
 the relatively massive MSE (0.34) for the second subpopulation.
 
-# 4.
+# 4. Genetic Programming for Image Classification
+I chose the f1_score metric instead of accuracy to focus on minimising false positives and false negatives, rather than
+maximising true positives as accuracy does.
 
-# 5.
+For the f1 dataset, the best individual had a training fitness of 0.98661, and a test fitness of 1.0 (accuracy 100%).
+The structure of this individual was:
+`Local_SIFT(Region_R(Image0, 113, 41, 50, 50))`
+
+For the f2 dataset, the best individual had a training fitness of 0.946122, and a test fitness of 0.980392 (accuracy 98%).
+The structure of this individual was:
+`Local_HOG(Region_R(Image0, 106, 57, 45, 51))`
+
+Neither individual opted to use a global feature, suggesting that only parts of the image (i.e. a local feature) were
+useful in classifying an image. The local feature used both times encompassed all (f1 - left) or enough of (f2 - right)
+the mouth (Figure 7). This finding makes sense, as the problem is classifying whether the face is smiling, primarily
+involving the mouth. The poorer performance of the best f2 individual (0.98) compared to the best f1 individual (0.89)
+may be attributed to the latter's local feature not encompassing the entire mouth region the way the former does.
+
+![Extracted regions (green) for select images (left, f1; right, f2; top, class 0/not smiling; bottom, class 1/smiling)](out/part4/faces.png){height=40%}
+
+The individuals also differed by what transformation was applied to the local feature. The best f1 individual used
+SIFT, which is by definition scale-invariant (does not matter how big or small the interest region is) and extracts
+features around interest points rather than fixating detection around particularly locations as in normal HOG, as the
+best f2 individual uses.
+
+# 5. ES for Training Neural Networks
+
