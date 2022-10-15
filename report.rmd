@@ -107,7 +107,7 @@ inputs is the likely explanation for the infinitesimally small MSE (10^-31) for 
 
 Seed 1's best individual (Figure 3) also had a fitness/MSE close to 0, but did not get as close due to its use of random constants
 such as 2.78 and 12.49. However, the constants ended up summing very close to 3, resulting in a very small MSE (10^-9).
-This result makes the case for adding random integers in the terminal set.
+This suggests the need to add random integers in the terminal set.
 
 ![Best program - seed 2](out/part3/2_tree.png){height=40%}
 
@@ -127,8 +127,8 @@ and had a complicated way of representing the first subpopulation's function, ho
 the relatively massive MSE (0.34) for the second subpopulation.
 
 # 4. Genetic Programming for Image Classification
-I chose the f1_score metric instead of accuracy to focus on minimising false positives and false negatives, rather than
-maximising true positives as accuracy does.
+I chose the f1_score metric instead of accuracy for fitness to focus on minimising false positives and false negatives,
+rather than maximising true positives as accuracy does.
 
 For the f1 dataset, the best individual had a training fitness of 0.98661, and a test fitness of 1.0 (accuracy 100%).
 The structure of this individual was:
@@ -144,7 +144,7 @@ the mouth (Figure 7). This finding makes sense, as the problem is classifying wh
 involving the mouth. The poorer performance of the best f2 individual (0.98) compared to the best f1 individual (0.89)
 may be attributed to the latter's local feature not encompassing the entire mouth region the way the former does.
 
-![Extracted regions (green) for select images (left, f1; right, f2; top, class 0/not smiling; bottom, class 1/smiling)](out/part4/faces.png){height=40%}
+![Extracted regions (green) for select images (left, f1; right, f2; top, class 0/not smiling; bottom, class 1/smiling)](out/part4/faces.png){height=30%}
 
 The individuals also differed by what transformation was applied to the local feature. The best f1 individual used
 SIFT, which is by definition scale-invariant (does not matter how big or small the interest region is) and extracts
@@ -152,4 +152,26 @@ features around interest points rather than fixating detection around particular
 best f2 individual uses.
 
 # 5. ES for Training Neural Networks
+The cartpole problem simulates a cart that frictionlessly moves along one dimension with a pole attached to it. The pole
+which will move differently in response to the cart motion likewise affects the cart's motion. The goal is to balance
+the pole as long as possible, until the pole "tips over" (absolute angle size exceeds 12º) or the cart "falls off the
+edge" (absolute position exceeds 2.4).
 
+The state representation consists of four numbers: the cart's position and velocity, and the pole's angle and angular
+velocity. The discrete action space consists of two actions, pushing the cart to the left or right. The reward function
+is proportional to every step taken (+1 each step). The episode ends if the above criteria are met, or after 500
+observations. A successfully learnt model maximises the reward, which is capped at 500 (1 for each observation).
+
+The structure of all policy neural nets take the state representation as an input (4) and is fully connected to 32
+features in the first layer. This layer is connected to two gated recurrent unit layers (one input to hidden, one hidden
+to hidden) with 32 units each. This layer is then fully connected to two features in the output layer, indicating which
+action in the discrete action space (2) to perform.
+
+100 individuals are generated each population, over 500 generations. The initial sigma is 0.01, and learning rate is 0.001,
+which decays by a factor of 0.999x and 0.9999x respectively each run. Fitness is maximised and mean and standard deviation
+are tracked.
+
+Figure 8 shows the average learning performance for five different seeds. Only two successfully reached a fitness
+greater than 11, and both reached the maximum fitness 500.
+
+![Average learning performance curves of OpenAI-ES by seed](out/part5/fig8.png){height=50%}
